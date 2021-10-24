@@ -25,22 +25,24 @@ M = np.zeros((len_rows, len_cols))
 for info in ums:
     uid, mid, star = info
     M[uid, mid] = star
+original_M = np.copy(M)
 
 # normalize M
 for irow in range(len_rows):
-    u_stars = M[irow]
+    u_stars = np.copy(M[irow])
     if np.count_nonzero(u_stars) > 0:
-        avg_stars = u_stars[np.nonzero(u_stars)].mean()
+        nonzero_index = np.nonzero(u_stars)
+        avg_stars = u_stars[nonzero_index].mean()
         if irow == target_uid:
             target_avg = avg_stars
-        for icol in range(len_cols):
-            if (M[irow][icol]) != 0:
-                M[irow][icol] -= avg_stars
+        u_stars[nonzero_index] -= avg_stars
+        M[irow] = u_stars
 
 def cosine_distance(a, b):
     mag_a = np.linalg.norm(a)
     mag_b = np.linalg.norm(b)
-    ret = np.dot(a, b)/(mag_a*mag_b)
+    # ret = np.dot(a, b)/(mag_a*mag_b)
+    ret = np.matmul(a, np.transpose(b))/(mag_a*mag_b)
     return ret
 
 # =====================================
@@ -55,12 +57,11 @@ for irow in range(len_rows):
         cos_dis = cosine_distance(target_stars, u_stars)
         distances[irow] = cos_dis
 sim_uids = np.argpartition(distances, -10)[-10:]
-# print(sim_uids)
 
 # compute average ratings of I for similar users
 stars = np.zeros(1001)
 for icol in range(1001):
-    m_stars = M[sim_uids,icol]
+    m_stars = np.copy(M[sim_uids,icol])
     if np.count_nonzero(m_stars) > 0:
         avg_stars = m_stars[np.nonzero(m_stars)].mean()
         stars[icol] = avg_stars
@@ -82,12 +83,12 @@ for ele in user_base:
 # and compute average ratings
 avg_ratings = np.zeros(1001)
 for icol in range(1001): # for movie 1 to 1000
-    i_stars = M[:,icol]
+    i_stars = np.copy(M[:,icol])
     if np.count_nonzero(i_stars) <= 0: # if movie doesn't exist
         continue
     m_distances = np.zeros(len_cols) # store distances between icol movie and all other movies
     for jcol in range(len_cols):
-        j_stars = M[:,jcol]
+        j_stars = np.copy(M[:,jcol])
         if np.count_nonzero(j_stars) <= 0:
             continue
         cos_dis = cosine_distance(i_stars, j_stars)
