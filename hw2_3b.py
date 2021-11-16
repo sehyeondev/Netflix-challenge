@@ -49,15 +49,13 @@ def cosine_distance(a, b):
 # user-based collaborative filtering
 # =====================================
 # find 10 most similar users
-distances = np.zeros(len_rows)
+distances = np.zeros(len_rows) - 10**9 # very small values
 target_stars = M[target_uid]
 for irow in range(len_rows):
     u_stars = M[irow]
-    nz_idx = np.nonzero(u_stars)[0]
-    if len(nz_idx) > 0:
-        # if target user rated nothing among movies a certain user rated
-        # if np.count_nonzero(target_stars[nz_idx]) <= 0: 
-        #     continue
+    if np.count_nonzero(u_stars) > 0:
+        if irow == target_uid:
+            continue
         cos_dis = cosine_distance(target_stars, u_stars)
         distances[irow] = cos_dis
 sim_uids = np.argpartition(distances, -10)[-10:]
@@ -69,14 +67,10 @@ stars = np.zeros(1001)
 for icol in range(1001):
     # m_stars = np.copy(M[sim_uids,icol]) # v1.
     m_stars = np.copy(original_M[sim_uids,icol]) # v2.
-    nz_idx = np.nonzero(m_stars)[0]
-    if len(nz_idx) > 0:
-        avg_stars = m_stars[nz_idx].mean()
+    if np.count_nonzero(m_stars) > 0:
+        avg_stars = m_stars[np.nonzero(m_stars)].mean()
         # stars[icol] = avg_stars + target_avg # v1.
-        if len(nz_idx) > 1:
-            stars[icol] = avg_stars # v2.
-        # if avg_stars == 4.5:
-        #     print(len(nz_idx))
+        stars[icol] = avg_stars # v2.
 rcmd_mids = np.argpartition(stars, -20)[-20:]
 
 # recommend 5 movies
@@ -101,10 +95,13 @@ for icol in range(1001): # for movie 1 to 1000
     i_stars = np.copy(M[:,icol])
     if np.count_nonzero(i_stars) <= 0: # if movie doesn't exist
         continue
-    m_distances = np.zeros(len_cols) # store distances between icol movie and all other movies
-    for jcol in range(1001, len_cols):
+    m_distances = np.zeros(len_cols) - 10**9 # store distances between icol movie and all other movies
+    # for jcol in range(1001, len_cols): # v3.
+    for jcol in range(len_cols):
         j_stars = np.copy(M[:,jcol])
         if np.count_nonzero(j_stars) <= 0:
+            continue
+        if icol == jcol:
             continue
         cos_dis = cosine_distance(i_stars, j_stars)
         m_distances[jcol] = cos_dis
@@ -112,11 +109,9 @@ for icol in range(1001): # for movie 1 to 1000
     # tuser_stars: ratings by target user for 10 similar movies
     # tuser_stars = M[target_uid,sim_mids] # v1. 
     tuser_stars = original_M[target_uid, sim_mids] # v2.
-    nz_idx = np.nonzero(tuser_stars)[0]
-    if len(nz_idx) > 0: # if target user rates at least one movie among them
-        avg_star = tuser_stars[nz_idx].mean() # take average the ratings
+    if np.count_nonzero(tuser_stars) > 0: # if target user rates at least one movie among them
+        avg_star = tuser_stars[np.nonzero(tuser_stars)].mean() # take average the ratings
         # avg_ratings[icol] = avg_star + target_avg # v1.
-        # if len(nz_idx) > 2:
         avg_ratings[icol] = avg_star # v2.
 top20_movies = np.argpartition(avg_ratings, -20)[-20:]
 

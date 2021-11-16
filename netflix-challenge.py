@@ -80,6 +80,7 @@ def optimize_u(M,U,V,i,x):
                 continue
             numer += v_x[col] * (m_i[col] - u_i[k]*v_k[col])
     denom = np.sum(np.square(v_x[nz_col]))
+    # print(denom)
     opt_u = numer/denom
     U[i][x] = opt_u
     return opt_u
@@ -110,10 +111,10 @@ def rmse(M,UdotV):
 # repeat UV decomposition and take the average of the results
 # start, last, interval = -0.025, 0.025, 0.0051
 # reps = (last-start)/interval
-r = 37 # total number of genres
-# r = 2
-# final_U = np.zeros((len_rows, r))
-# final_V = np.zeros((r, len_cols))
+# r = 37 # total number of genres
+r = 2
+final_U = np.zeros((len_rows, r)) + 1
+final_V = np.zeros((r, len_cols)) + 1
 # perturb = np.arange(start,last, interval) # uniform perturbation
 # reps = len(perturb)
 # print(reps)
@@ -126,18 +127,27 @@ for i in range(len_rows):
 for i in range(r):
     for j in range(len_cols):
         permutation.append((1,i,j))
-# print(permutation)
 np.random.shuffle(permutation)
-# print(permutation[0])
 
 # version 3
 # optimize all elements
 # initialize U and V with small perturbation
 # M = original_M
-U = np.zeros((len_rows, r)) + 0.0001
-V = np.zeros((r, len_cols)) + 0.0001
+
+# for i in range(2):
+U = np.zeros((len_rows, r)) + 1
+V = np.zeros((r, len_cols)) + 1
+# print(U)
+# print(V)
+# if i == 1:
+#     U -= 0.0002
+#     V -= 0.0002
+standard = len(permutation)
 for perm in permutation:
-    print(perm)
+    standard -= 1
+    print(standard)
+    # print(rmse(M, np.dot(U, V)))
+    # print(perm)
     if perm[0] == 0: # optimize u_ix
         i = perm[1]
         x = perm[2]
@@ -151,7 +161,17 @@ for perm in permutation:
     # print("for each perm")
     # print(U)
     # print(V)
+# final_U += U
+# final_V += V
+
+# final_U = final_U/float(2)
+# final_V = final_V/float(2)
 final_UV = np.dot(U, V)
+r_rmse = rmse(M, final_UV)
+print("r = %d" %r)
+print("final rmse = %f" %r_rmse)
+
+
 
 # write result with predicted star
 g = open("output.txt", 'w')
@@ -160,20 +180,27 @@ for info in pred_info:
     mid = int(info[1])
     add = (avg_users[uid] + avg_items[mid])/2
     pred_star = final_UV[uid][mid] + add
+    if uid == 551:
+        print(final_UV[uid][mid])
+        print(add)
     info[2] = str(pred_star)
     g.write(",".join(info))
+
 
 ## test result
 result = np.zeros((len_rows, len_cols))
 for row in range(len_rows):
     for col in range(len_cols):
-        result[row][col] = final_UV[row][col] + (avg_users[uid] + avg_items[mid])/2
-# print(final_U)
-# print(final_V)
+        result[row][col] = final_UV[row][col] + (avg_users[row] + avg_items[col])/2
+
+fi_rmse = rmse(original_M, result)
+print("final final rmse = %f" %fi_rmse)
+# print(U)
+# print(V)
 # print(final_UV)
 # print(M)
-# print(result)
-# print(original_M)
+print(result)
+print(original_M)
 
 # ==============================
 # # version 2
